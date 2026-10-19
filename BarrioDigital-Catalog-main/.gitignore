@@ -1,0 +1,16 @@
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.log

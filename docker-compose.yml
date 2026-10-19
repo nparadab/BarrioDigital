@@ -1,0 +1,165 @@
+services:
+  # ============================================================================
+  # Mensajería Asíncrona (RabbitMQ Clúster con Management UI)
+  # ============================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: bd-rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq
+      RABBITMQ_ERLANG_COOKIE: BARRIODIGITAL_MQ_COOKIE_SECRET
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI Web
+    volumes:
+      - rabbitmq1_data:/var/lib/rabbitmq
+      - ./infra/mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - barriodigital-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
+
+  rabbitmq2:
+    image: rabbitmq:3.13-management-alpine
+    container_name: bd-rabbitmq-node2
+    hostname: rabbitmq2
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq2
+      RABBITMQ_ERLANG_COOKIE: BARRIODIGITAL_MQ_COOKIE_SECRET
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rabbitmq2_data:/var/lib/rabbitmq
+      - ./infra/mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - barriodigital-net
+    depends_on:
+      rabbitmq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
+
+  # ============================================================================
+  # Microservicios Backend Spring Boot
+  # ============================================================================
+  ms-requests:
+    build:
+      context: ./BarrioDigital-Requests-main
+      dockerfile: Dockerfile
+    container_name: bd-ms-requests
+    ports:
+      - "8081:8081"
+    environment:
+      CATALOG_SERVICE_URL: "http://ms-catalog:8082"
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    networks:
+      - barriodigital-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ms-catalog:
+    build:
+      context: ./BarrioDigital-Catalog-main
+      dockerfile: Dockerfile
+    container_name: bd-ms-catalog
+    ports:
+      - "8082:8082"
+    networks:
+      - barriodigital-net
+
+  ms-notify:
+    build:
+      context: ./BarrioDigital-Notify-main
+      dockerfile: Dockerfile
+    container_name: bd-ms-notify
+    ports:
+      - "8083:8083"
+    environment:
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    networks:
+      - barriodigital-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ms-rabbitmq-admin:
+    build:
+      context: ./BarrioDigital-RabbitAdmin-main
+      dockerfile: Dockerfile
+    container_name: bd-ms-rabbitmq-admin
+    ports:
+      - "8084:8084"
+    environment:
+      RABBITMQ_HOST: "rabbitmq"
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    networks:
+      - barriodigital-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ms-bff:
+    build:
+      context: ./BarrioDigital-BFF-main
+      dockerfile: Dockerfile
+    container_name: bd-ms-bff
+    ports:
+      - "8080:8080"
+    environment:
+      REQUESTS_SERVICE_URL: "http://ms-requests:8081"
+      CATALOG_SERVICE_URL: "http://ms-catalog:8082"
+      RABBITADMIN_SERVICE_URL: "http://ms-rabbitmq-admin:8084"
+      NOTIFY_SERVICE_URL: "http://ms-notify:8083"
+    networks:
+      - barriodigital-net
+    depends_on:
+      - ms-requests
+      - ms-catalog
+      - ms-notify
+      - ms-rabbitmq-admin
+
+  # ============================================================================
+  # Frontend Angular
+  # ============================================================================
+  frontend:
+    build:
+      context: ./BarrioDigital-Frontend-main
+      dockerfile: Dockerfile
+    container_name: bd-frontend
+    ports:
+      - "4200:443"
+    networks:
+      - barriodigital-net
+    depends_on:
+      - ms-bff
+
+networks:
+  barriodigital-net:
+    driver: bridge
+
+volumes:
+  rabbitmq1_data:
+  rabbitmq2_data:

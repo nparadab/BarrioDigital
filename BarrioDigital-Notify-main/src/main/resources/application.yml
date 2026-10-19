@@ -1,0 +1,46 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ms-barriodigital-notify
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        auto-startup: true
+        prefetch: 1
+        default-requeue-rejected: false
+
+rabbitmq:
+  exchanges:
+    direct: cmd.direct
+    topic: cmd.topic
+    dlx: cmd.dead.dlx
+  queues:
+    email: q.cmd.email
+    email-dlq: q.cmd.email.dlq
+    crew: q.cmd.crew
+    crew-dlq: q.cmd.crew.dlq
+    certificate: q.cmd.certificate
+    certificate-dlq: q.cmd.certificate.dlq
+  routing-keys:
+    email-direct: email.send
+    email-topic: email.*
+    email-dlq: email.dlq
+    crew-direct: crew.ticket
+    crew-topic: crew.#
+    crew-dlq: crew.dlq
+    certificate-direct: certificate.gen
+    certificate-topic: certificate.*
+    certificate-dlq: certificate.dlq
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

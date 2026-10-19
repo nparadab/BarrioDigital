@@ -1,0 +1,66 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ms-barriodigital-requests
+  datasource:
+    url: jdbc:h2:mem:requestsdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        auto-startup: false
+        retry:
+          enabled: true
+          initial-interval: 2000ms
+          max-attempts: 3
+
+rabbitmq:
+  exchanges:
+    direct: cmd.direct
+    topic: cmd.topic
+    dlx: cmd.dead.dlx
+  queues:
+    email: q.cmd.email
+    email-dlq: q.cmd.email.dlq
+    crew: q.cmd.crew
+    crew-dlq: q.cmd.crew.dlq
+    certificate: q.cmd.certificate
+    certificate-dlq: q.cmd.certificate.dlq
+  routing-keys:
+    email-direct: email.send
+    email-topic: email.*
+    email-dlq: email.dlq
+    crew-direct: crew.ticket
+    crew-topic: crew.#
+    crew-dlq: crew.dlq
+    certificate-direct: certificate.gen
+    certificate-topic: certificate.*
+    certificate-dlq: certificate.dlq
+
+catalog:
+  service:
+    url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
