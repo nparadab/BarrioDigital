@@ -17,7 +17,7 @@ import java.util.Map;
  * Endpoints REST para administración de bindings en RabbitMQ.
  */
 @RestController
-@RequestMapping("/api/admin/bindings")
+@RequestMapping({"/api/admin/bindings", "/bindings"})
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")

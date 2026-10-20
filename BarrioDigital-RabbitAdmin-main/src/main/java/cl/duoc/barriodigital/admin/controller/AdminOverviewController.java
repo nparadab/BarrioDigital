@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/overview")
+@RequestMapping({"/api/admin/overview", "/overview"})
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AdminOverviewController {

@@ -43,6 +43,11 @@ public class RabbitAdminConfig {
         return admin;
     }
 
+    @Bean
+    public org.springframework.boot.ApplicationRunner topologyInitializer(RabbitAdmin rabbitAdmin) {
+        return args -> rabbitAdmin.initialize();
+    }
+
     // Topología base
     @Bean
     public DirectExchange directExchange() {

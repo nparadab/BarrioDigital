@@ -18,7 +18,7 @@ import java.util.Map;
  * Cumple con el criterio: "expone endpoints REST bien definidos por ejemplo POST /queues o DELETE /queues/{name}".
  */
 @RestController
-@RequestMapping("/api/admin/queues")
+@RequestMapping({"/api/admin/queues", "/queues"})
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")

@@ -59,12 +59,11 @@ public class NotifySimulationController {
 
     @PostMapping("/simulate/poison-pill")
     public ResponseEntity<?> simulatePoisonPill() {
-        // Enviar un mensaje diseñado para fallar en el consumidor y verificar el desvío a DLQ
         EmailNotificationEvent payload = EmailNotificationEvent.builder()
-                .trackingNumber("BD-FAIL-9999")
+                .trackingNumber("BD-FAIL-EMAIL-" + (int)(Math.random() * 9000 + 1000))
                 .recipientEmail("poison.error@simulacion.cl")
-                .recipientName("Test Fallo")
-                .subject("Mensaje envenenado para prueba de DLQ")
+                .recipientName("Test Fallo Email")
+                .subject("Mensaje envenenado para prueba de DLQ de Email")
                 .message("Este mensaje generará excepción en consumidor y se enviará a q.cmd.email.dlq")
                 .eventType("SIMULATED_FAILURE")
                 .build();
@@ -79,7 +78,149 @@ public class NotifySimulationController {
 
         rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_DIRECT, RabbitMQConstants.ROUTING_KEY_EMAIL_SEND, envelope);
         return ResponseEntity.ok(Map.of(
-                "message", "Mensaje de fallo simulado enviado. El consumidor rechazará con NACK sin requeue y RabbitMQ lo desviará a la DLQ q.cmd.email.dlq",
+                "queue", RabbitMQConstants.QUEUE_CMD_EMAIL,
+                "dlq", RabbitMQConstants.QUEUE_CMD_EMAIL_DLQ,
+                "message", "Mensaje de fallo simulado enviado. El consumidor rechazará con NACK (requeue=false) y RabbitMQ lo desviará a q.cmd.email.dlq",
+                "tracking", payload.getTrackingNumber()
+        ));
+    }
+
+    @PostMapping("/simulate/crew")
+    public ResponseEntity<?> simulateCrew(@RequestParam(defaultValue = "Cuadrilla Centro 01") String crew) {
+        CrewTicketEvent payload = CrewTicketEvent.builder()
+                .trackingNumber("BD-CREW-" + (int)(Math.random() * 9000 + 1000))
+                .requestId(200L)
+                .procedureName("Reparación Luminaria")
+                .citizenName("Vecino Cuadrilla")
+                .citizenPhone("+56912345678")
+                .address("Av. Principal 1234")
+                .description("Foco apagado en vía pública")
+                .assignedCrew(crew)
+                .scheduledBy("funcionario@barriodigital.cl")
+                .scheduledAt(LocalDateTime.now())
+                .build();
+
+        EventEnvelope<CrewTicketEvent> envelope = EventEnvelope.<CrewTicketEvent>builder()
+                .eventId(UUID.randomUUID().toString())
+                .type("CREW_TICKET")
+                .timestamp(LocalDateTime.now())
+                .correlationId(payload.getTrackingNumber())
+                .payload(payload)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_DIRECT, RabbitMQConstants.ROUTING_KEY_CREW_TICKET, envelope);
+        return ResponseEntity.ok(Map.of("message", "Ticket de cuadrilla enviado a q.cmd.crew vía cmd.direct", "tracking", payload.getTrackingNumber()));
+    }
+
+    @PostMapping("/simulate/crew/poison-pill")
+    public ResponseEntity<?> simulateCrewPoisonPill() {
+        CrewTicketEvent payload = CrewTicketEvent.builder()
+                .trackingNumber("BD-FAIL-CREW-" + (int)(Math.random() * 9000 + 1000))
+                .requestId(201L)
+                .procedureName("Falla Cuadrilla Test")
+                .address("Calle Error 404")
+                .assignedCrew("error-cuadrilla-poison")
+                .scheduledAt(LocalDateTime.now())
+                .build();
+
+        EventEnvelope<CrewTicketEvent> envelope = EventEnvelope.<CrewTicketEvent>builder()
+                .eventId(UUID.randomUUID().toString())
+                .type("CREW_TICKET")
+                .timestamp(LocalDateTime.now())
+                .correlationId(payload.getTrackingNumber())
+                .payload(payload)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_DIRECT, RabbitMQConstants.ROUTING_KEY_CREW_TICKET, envelope);
+        return ResponseEntity.ok(Map.of(
+                "queue", RabbitMQConstants.QUEUE_CMD_CREW,
+                "dlq", RabbitMQConstants.QUEUE_CMD_CREW_DLQ,
+                "message", "Fallo de cuadrilla simulado enviado. El consumidor rechazará con NACK (requeue=false) y RabbitMQ lo desviará a q.cmd.crew.dlq",
+                "tracking", payload.getTrackingNumber()
+        ));
+    }
+
+    @PostMapping("/simulate/certificate")
+    public ResponseEntity<?> simulateCertificate(@RequestParam(defaultValue = "CERTIFICADO_RESIDENCIA") String docType) {
+        CertificateGenerationEvent payload = CertificateGenerationEvent.builder()
+                .trackingNumber("BD-CERT-" + (int)(Math.random() * 9000 + 1000))
+                .requestId(300L)
+                .documentType(docType)
+                .citizenDni("12345678-9")
+                .citizenName("Vecino Certificado")
+                .procedureName("Certificado de Residencia")
+                .status("COMPLETADO")
+                .resolutionNotes("Emitido electrónicamente")
+                .issuedAt(LocalDateTime.now())
+                .build();
+
+        EventEnvelope<CertificateGenerationEvent> envelope = EventEnvelope.<CertificateGenerationEvent>builder()
+                .eventId(UUID.randomUUID().toString())
+                .type("CERTIFICATE_GENERATION")
+                .timestamp(LocalDateTime.now())
+                .correlationId(payload.getTrackingNumber())
+                .payload(payload)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_DIRECT, RabbitMQConstants.ROUTING_KEY_CERTIFICATE_GEN, envelope);
+        return ResponseEntity.ok(Map.of("message", "Generación de certificado enviada a q.cmd.certificate vía cmd.direct", "tracking", payload.getTrackingNumber()));
+    }
+
+    @PostMapping("/simulate/certificate/poison-pill")
+    public ResponseEntity<?> simulateCertificatePoisonPill() {
+        CertificateGenerationEvent payload = CertificateGenerationEvent.builder()
+                .trackingNumber("BD-FAIL-CERT-" + (int)(Math.random() * 9000 + 1000))
+                .requestId(301L)
+                .documentType("error-poison-doc")
+                .citizenDni("99999999-9")
+                .citizenName("Vecino Error Doc")
+                .issuedAt(LocalDateTime.now())
+                .build();
+
+        EventEnvelope<CertificateGenerationEvent> envelope = EventEnvelope.<CertificateGenerationEvent>builder()
+                .eventId(UUID.randomUUID().toString())
+                .type("CERTIFICATE_GENERATION")
+                .timestamp(LocalDateTime.now())
+                .correlationId(payload.getTrackingNumber())
+                .payload(payload)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_DIRECT, RabbitMQConstants.ROUTING_KEY_CERTIFICATE_GEN, envelope);
+        return ResponseEntity.ok(Map.of(
+                "queue", RabbitMQConstants.QUEUE_CMD_CERTIFICATE,
+                "dlq", RabbitMQConstants.QUEUE_CMD_CERTIFICATE_DLQ,
+                "message", "Fallo de certificado simulado enviado. El consumidor rechazará con NACK (requeue=false) y RabbitMQ lo desviará a q.cmd.certificate.dlq",
+                "tracking", payload.getTrackingNumber()
+        ));
+    }
+
+    @PostMapping("/simulate/topic")
+    public ResponseEntity<?> simulateTopic(
+            @RequestParam(defaultValue = "email.alerta") String routingKey,
+            @RequestParam(defaultValue = "Mensaje broadcast vía topic exchange") String message
+    ) {
+        EmailNotificationEvent payload = EmailNotificationEvent.builder()
+                .trackingNumber("BD-TOPIC-" + (int)(Math.random() * 9000 + 1000))
+                .recipientEmail("vecino.comunidad@barriodigital.cl")
+                .recipientName("Comunidad Vecinal")
+                .subject("Alerta Comunitaria (" + routingKey + ")")
+                .message(message)
+                .eventType("TOPIC_EVENT")
+                .build();
+
+        EventEnvelope<EmailNotificationEvent> envelope = EventEnvelope.<EmailNotificationEvent>builder()
+                .eventId(UUID.randomUUID().toString())
+                .type("TOPIC_MESSAGE")
+                .timestamp(LocalDateTime.now())
+                .correlationId(payload.getTrackingNumber())
+                .payload(payload)
+                .build();
+
+        rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE_CMD_TOPIC, routingKey, envelope);
+        return ResponseEntity.ok(Map.of(
+                "exchange", RabbitMQConstants.EXCHANGE_CMD_TOPIC,
+                "routingKey", routingKey,
+                "message", "Mensaje enrutado a través del Topic Exchange cmd.topic",
                 "tracking", payload.getTrackingNumber()
         ));
     }

@@ -16,7 +16,7 @@ import java.util.Map;
  * Endpoints REST para administración de exchanges en RabbitMQ.
  */
 @RestController
-@RequestMapping("/api/admin/exchanges")
+@RequestMapping({"/api/admin/exchanges", "/exchanges"})
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")

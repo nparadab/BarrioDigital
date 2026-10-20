@@ -45,7 +45,7 @@ services:
       - barriodigital-net
     depends_on:
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
