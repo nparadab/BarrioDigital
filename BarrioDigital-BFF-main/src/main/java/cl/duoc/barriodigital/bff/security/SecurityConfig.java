@@ -146,6 +146,12 @@ public class SecurityConfig {
                 "http://127.0.0.1:4200",
                 "http://localhost:80",
                 "http://localhost",
+                "https://100.58.58.154:4200",
+                "https://100.58.58.154",
+                "http://100.58.58.154:4200",
+                "http://100.58.58.154",
+                "https://3.90.162.113:4200",
+                "https://3.90.162.113",
                 "https://*.amazonaws.com"
         ));
         configuration.setAllowedOriginPatterns(List.of("*"));
