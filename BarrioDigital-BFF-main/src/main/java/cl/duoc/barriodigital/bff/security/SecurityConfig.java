@@ -57,7 +57,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos
-                        .requestMatchers("/actuator/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/actuator/**", "/api/auth/**", "/error").permitAll()
 
                         // Endpoints de trámites (Requests)
                         .requestMatchers(HttpMethod.POST, "/api/requests").hasAnyRole("Admin", "Funcionario", "Vecino")
